@@ -35,7 +35,13 @@ model = genai.GenerativeModel("gemini-exp-1206", generation_config={
     "max_output_tokens": 8192
 })
 
-def generate_lyrics(audio_path):
+def generate_lyrics(audio_path, custom_api_key=None):
+    # Use custom API key if provided, otherwise use the default
+    api_key = custom_api_key if custom_api_key else os.getenv("API_KEY")
+    if not api_key:
+        raise ValueError("No API key provided")
+    
+    genai.configure(api_key=api_key)
     audio_file = genai.upload_file(audio_path)
     response = model.generate_content([prompt, audio_file])
     response_text = response.text
@@ -69,7 +75,9 @@ def generate():
         file.save(filepath)
         
         try:
-            subtitles = generate_lyrics(filepath)
+            # Get custom API key if provided
+            custom_api_key = request.form.get('api_key')
+            subtitles = generate_lyrics(filepath, custom_api_key)
             os.remove(filepath)  # Clean up the uploaded file
             
             # Generate a unique ID for these subtitles and store them

@@ -12,6 +12,19 @@
             <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Lyrify</h1>
             
             <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="mb-6">
+                    <button type="button" id="toggleApiKey" class="text-sm text-gray-600 hover:text-gray-800 flex items-center">
+                        <svg id="chevronRight" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span>Use Custom API Key</span>
+                    </button>
+                    <div id="apiKeySection" class="hidden mt-4">
+                        <input type="text" id="apiKey" placeholder="Enter your Gemini API key" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">If not provided, the default API key will be used.</p>
+                    </div>
+                </div>
                 <form id="uploadForm" class="space-y-4">
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                         <input type="file" id="audioFile" name="audio" accept="audio/*" class="hidden">
@@ -65,8 +78,16 @@
         const subtitles = document.getElementById('subtitles');
         const error = document.getElementById('error');
         const downloadButton = document.getElementById('downloadButton');
+        const toggleApiKey = document.getElementById('toggleApiKey');
+        const apiKeySection = document.getElementById('apiKeySection');
+        const chevronRight = document.getElementById('chevronRight');
         
         let currentFileId = null;
+
+        toggleApiKey.addEventListener('click', () => {
+            apiKeySection.classList.toggle('hidden');
+            chevronRight.style.transform = apiKeySection.classList.contains('hidden') ? '' : 'rotate(90deg)';
+        });
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -85,6 +106,12 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
+            
+            // Add API key to form data if provided
+            const apiKey = document.getElementById('apiKey').value;
+            if (apiKey) {
+                formData.append('api_key', apiKey);
+            }
             
             if (!fileInput.files[0]) {
                 error.textContent = 'Please select an audio file.';
