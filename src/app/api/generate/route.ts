@@ -4,8 +4,9 @@ import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Store generated subtitles temporarily
-export const subtitlesCache = new Map<string, string>();
+// Store generated subtitles temporarily but don't export it
+const subtitlesCache = new Map<string, string>();
+// export const subtitlesCache = new Map<string, string>();
 const prompt = `Generate a Lyrical Subtitle File for this song in the SRT format. 
 The SRT format should follow this structure for each subtitle:
 1. Subtitle number
@@ -26,7 +27,7 @@ Please wrap the subtitles between [SUBTITLES_START] and [SUBTITLES_END] tags.`;
 
 async function generateLyrics(audioPath: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
+    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig: { temperature: 0 } });
 
     // Read the audio file as base64
     const audioBuffer = await readFile(audioPath);
@@ -117,4 +118,4 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
-} 
+}
