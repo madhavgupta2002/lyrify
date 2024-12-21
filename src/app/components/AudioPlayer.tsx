@@ -25,25 +25,10 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
                 console.error('Invalid timestamp format:', timestamp);
                 return 0;
             }
-
             try {
-                // Split by : and handle both HH:MM:SS,ms and MM:SS,ms formats
-                const parts = timestamp.split(':');
-                let hours = 0, minutes = 0, seconds = '';
-
-                if (parts.length === 3) {
-                    // HH:MM:SS,ms format
-                    const [h, m, s] = parts.map(p => p.trim());
-                    hours = parseInt(h);
-                    minutes = parseInt(m);
-                    seconds = s;
-                } else if (parts.length === 2) {
-                    // MM:SS,ms format
-                    const [m, s] = parts.map(p => p.trim());
-                    minutes = parseInt(m);
-                    seconds = s;
-                } else {
-                    console.error('Invalid timestamp format:', timestamp);
+                const [minutes, seconds] = timestamp.split(':').map(part => part.trim());
+                if (!minutes || !seconds) {
+                    console.error('Invalid timestamp parts:', timestamp);
                     return 0;
                 }
 
@@ -53,12 +38,7 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
                     return 0;
                 }
 
-                return (
-                    hours * 3600 +
-                    minutes * 60 +
-                    parseInt(secs) +
-                    parseInt(ms) / 1000
-                );
+                return parseInt(minutes) * 60 + parseInt(secs) + parseInt(ms) / 1000;
             } catch (error) {
                 console.error('Error parsing timestamp:', error);
                 return 0;
@@ -73,39 +53,53 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
 
             try {
                 const subtitles: Subtitle[] = [];
-                // Remove SUBTITLES_START line if present
-                let content = srtContent;
-                if (content.startsWith('[SUBTITLES_START]')) {
-                    content = content.substring('[SUBTITLES_START]'.length).trim();
-                }
-                // Remove any blank lines before splitting into blocks
-                const cleanedContent = content.replace(/\n\s*\n/g, '\n\n').trim();
-                const blocks = cleanedContent.split('\n\n');
+                // Remove all blank lines and split by real entries
+                const cleanContent = srtContent.split('\n').filter(line => line.trim() !== '').join('\n');
+                let currentSubtitle: Partial<Subtitle> = {};
+                let textLines: string[] = [];
 
-                blocks.forEach((block) => {
-                    const lines = block.split('\n');
-                    if (lines.length >= 3) {
-                        const id = parseInt(lines[0]);
-                        const timeParts = lines[1].split(' --> ');
+                cleanContent.split('\n').forEach(line => {
+                    const trimmedLine = line.trim();
 
-                        if (timeParts.length !== 2) {
-                            console.error('Invalid time format:', lines[1]);
-                            return;
-                        }
-
-                        const [startStr, endStr] = timeParts;
-                        const text = lines.slice(2).join('\n');
-
-                        if (!isNaN(id) && startStr && endStr) {
+                    // Check if line is a subtitle number
+                    if (/^\d+$/.test(trimmedLine)) {
+                        // Save previous subtitle if exists
+                        if (currentSubtitle.id && currentSubtitle.startTime !== undefined &&
+                            currentSubtitle.endTime !== undefined && textLines.length > 0) {
                             subtitles.push({
-                                id,
-                                startTime: parseTimestamp(startStr.trim()),
-                                endTime: parseTimestamp(endStr.trim()),
-                                text,
+                                id: currentSubtitle.id,
+                                startTime: currentSubtitle.startTime,
+                                endTime: currentSubtitle.endTime,
+                                text: textLines.join(' ')
                             });
                         }
+
+                        // Start new subtitle
+                        currentSubtitle = { id: parseInt(trimmedLine) };
+                        textLines = [];
+                    }
+                    // Check if line is timestamp range
+                    else if (trimmedLine.includes('-->')) {
+                        const [start, end] = trimmedLine.split('-->').map(t => t.trim());
+                        currentSubtitle.startTime = parseTimestamp(start);
+                        currentSubtitle.endTime = parseTimestamp(end);
+                    }
+                    // Must be text content
+                    else {
+                        textLines.push(trimmedLine);
                     }
                 });
+
+                // Don't forget to add the last subtitle
+                if (currentSubtitle.id && currentSubtitle.startTime !== undefined &&
+                    currentSubtitle.endTime !== undefined && textLines.length > 0) {
+                    subtitles.push({
+                        id: currentSubtitle.id,
+                        startTime: currentSubtitle.startTime,
+                        endTime: currentSubtitle.endTime,
+                        text: textLines.join(' ')
+                    });
+                }
 
                 return subtitles;
             } catch (error) {

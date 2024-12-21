@@ -26,7 +26,7 @@ Please wrap the subtitles between [SUBTITLES_START] and [SUBTITLES_END] tags.`;
 
 async function generateLyrics(audioPath: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig: { temperature: 0 } });
+    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
 
     // Read the audio file as base64
     const audioBuffer = await readFile(audioPath);
