@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import AudioPlayer from './components/AudioPlayer';
+import GenerateButton from './components/GenerateButton';
+import CustomApiKeyButton from './components/CustomApiKeyButton';
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -68,28 +71,10 @@ export default function Home() {
 
           <div className="backdrop-blur-lg bg-white/10 rounded-2xl shadow-2xl p-8 border border-white/20">
             <div className="mb-8">
-              <button
-                type="button"
+              <CustomApiKeyButton
+                showApiKey={showApiKey}
                 onClick={() => setShowApiKey(!showApiKey)}
-                className="text-sm text-gray-300 hover:text-white flex items-center transition-colors duration-200"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-4 w-4 mr-2 transform transition-transform duration-200 ${showApiKey ? 'rotate-90' : ''
-                    }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span>Use Custom API Key</span>
-              </button>
+              />
               {showApiKey && (
                 <div className="mt-4">
                   <input
@@ -188,13 +173,7 @@ export default function Home() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25"
-              >
-                {loading ? 'Generating Lyrics...' : 'Generate Lyrics'}
-              </button>
+              <GenerateButton loading={loading} />
             </form>
 
             {loading && (
@@ -217,7 +196,8 @@ export default function Home() {
                 <h2 className="text-2xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
                   Generated Lyrics
                 </h2>
-                <div className="bg-gray-800/50 rounded-lg p-6 font-mono text-sm text-gray-300 overflow-x-auto">
+                {file && <AudioPlayer audioFile={file} subtitles={subtitles} />}
+                <div className="bg-gray-800/50 rounded-lg p-6 font-mono text-sm text-gray-300 overflow-x-auto mt-4">
                   <pre className="whitespace-pre-wrap">{subtitles}</pre>
                 </div>
                 <button

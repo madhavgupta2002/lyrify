@@ -6,17 +6,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Store generated subtitles temporarily
 export const subtitlesCache = new Map<string, string>();
-
 const prompt = `Generate a Lyrical Subtitle File for this song in the SRT format. 
 The SRT format should follow this structure for each subtitle:
 1. Subtitle number
-2. Timestamp in format: HH:MM:SS,mmm --> HH:MM:SS,mmm
+2. Timestamp in format: MM:SS,mmm --> MM:SS,mmm
 3. Blank line
 4. If the Line isnt in English, put the english translation in square brackets of the corresponding line.
 
 For example:
 1
-00:00:01,000 --> 00:00:04,000
+00:01,000 --> 00:04,000
 First line of lyrics
 
 Please include accurate timestamps that match when each line is actually sung in the audio. Make sure the durations are appropriate for each line of lyrics.
