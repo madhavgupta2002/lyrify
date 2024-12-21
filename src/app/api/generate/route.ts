@@ -17,13 +17,16 @@ For example:
 1
 00:01,000 --> 00:04,000
 First line of lyrics
+2
+00:05,000 --> 00:06,000
+Second line of lyrics
 
 Please include accurate timestamps that match when each line is actually sung in the audio. Make sure the durations are appropriate for each line of lyrics.
 Please wrap the subtitles between [SUBTITLES_START] and [SUBTITLES_END] tags.`;
 
 async function generateLyrics(audioPath: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
+    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig: { temperature: 0 } });
 
     // Read the audio file as base64
     const audioBuffer = await readFile(audioPath);

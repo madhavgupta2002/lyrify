@@ -66,7 +66,7 @@ export default function Home() {
             <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
               Lyrify
             </h1>
-            <p className="text-gray-300 text-lg">Transform your music into lyrics with AI magic</p>
+            <p className="text-gray-300 text-lg">Transform your music into lyrics.</p>
           </div>
 
           <div className="backdrop-blur-lg bg-white/10 rounded-2xl shadow-2xl p-8 border border-white/20">

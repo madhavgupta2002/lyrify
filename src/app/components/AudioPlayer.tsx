@@ -33,10 +33,15 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
 
                 if (parts.length === 3) {
                     // HH:MM:SS,ms format
-                    [hours, minutes, seconds] = parts.map(p => p.trim());
+                    const [h, m, s] = parts.map(p => p.trim());
+                    hours = parseInt(h);
+                    minutes = parseInt(m);
+                    seconds = s;
                 } else if (parts.length === 2) {
                     // MM:SS,ms format
-                    [minutes, seconds] = parts.map(p => p.trim());
+                    const [m, s] = parts.map(p => p.trim());
+                    minutes = parseInt(m);
+                    seconds = s;
                 } else {
                     console.error('Invalid timestamp format:', timestamp);
                     return 0;
@@ -49,8 +54,8 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
                 }
 
                 return (
-                    parseInt(hours.toString()) * 3600 +
-                    parseInt(minutes.toString()) * 60 +
+                    hours * 3600 +
+                    minutes * 60 +
                     parseInt(secs) +
                     parseInt(ms) / 1000
                 );
@@ -68,7 +73,14 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
 
             try {
                 const subtitles: Subtitle[] = [];
-                const blocks = srtContent.trim().split('\n\n');
+                // Remove SUBTITLES_START line if present
+                let content = srtContent;
+                if (content.startsWith('[SUBTITLES_START]')) {
+                    content = content.substring('[SUBTITLES_START]'.length).trim();
+                }
+                // Remove any blank lines before splitting into blocks
+                const cleanedContent = content.replace(/\n\s*\n/g, '\n\n').trim();
+                const blocks = cleanedContent.split('\n\n');
 
                 blocks.forEach((block) => {
                     const lines = block.split('\n');
