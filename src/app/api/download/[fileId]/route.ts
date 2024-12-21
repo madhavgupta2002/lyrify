@@ -5,9 +5,9 @@ import { subtitlesCache } from '../../generate/route';
 
 export async function GET(
     request: NextRequest,
-    context: { params: { fileId: string } }
+    { params }: { params: { fileId: string } }
 ) {
-    const fileId = context.params.fileId;
+    const fileId = params.fileId;
     const subtitles = subtitlesCache.get(fileId);
 
     if (!subtitles) {
