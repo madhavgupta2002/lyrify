@@ -1,8 +1,8 @@
 # Lyrify
 
 A web application that generates synchronized SRT subtitles for audio files using Google's Gemini 2.0 model.
+![image](https://github.com/user-attachments/assets/f395abd6-021f-4ed8-918b-7c7643fe9961)
 
-![image](https://github.com/user-attachments/assets/39acde80-03b9-4289-84b7-ba46753a120d)
 
 ## Features
 
@@ -58,3 +58,4 @@ The application will be available at `http://localhost:5000`
 ## License
 
 MIT 
+![image](https://github.com/user-attachments/assets/39acde80-03b9-4289-84b7-ba46753a120d)
