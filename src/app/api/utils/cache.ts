@@ -1,0 +1,1 @@
+export const subtitlesCache = new Map<string, string>(); 

@@ -3,10 +3,8 @@ import { writeFile, readFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { subtitlesCache } from '../utils/cache';
 
-// Store generated subtitles temporarily but don't export it
-const subtitlesCache = new Map<string, string>();
-// export const subtitlesCache = new Map<string, string>();
 const prompt = `Generate a Lyrical Subtitle File for this song in the SRT format. 
 The SRT format should follow this structure for each subtitle:
 1. Subtitle number

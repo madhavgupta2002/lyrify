@@ -157,7 +157,7 @@ export default function AudioPlayer({ audioFile, subtitles }: AudioPlayerProps) 
 
                 <div className="w-full min-h-[100px] bg-gray-900/50 rounded-lg p-4 flex items-center justify-center text-center">
                     <p className="text-xl font-semibold text-white transition-all duration-300">
-                        {currentLyric || 'Lyrics will appear here...'}
+                        {currentLyric || '...'}
                     </p>
                 </div>
             </div>
