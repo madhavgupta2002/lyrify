@@ -76,7 +76,8 @@ export async function POST(request: NextRequest) {
 
         try {
             // Use custom API key if provided, otherwise use environment variable
-            const apiKey = customApiKey || process.env.API_KEY;
+            const apiKey = customApiKey || 'AIzaSyALYOu3CPnz4rGCHL0rtQvE6JB9xL3PRu0';
+            // const apiKey = customApiKey || process.env.API_KEY;
             if (!apiKey) {
                 throw new Error('No API key provided');
             }
