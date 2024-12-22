@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, readFile, unlink } from 'fs/promises';
-import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { subtitlesCache } from '../utils/cache';
@@ -23,12 +21,11 @@ Second line of lyrics
 Please include accurate timestamps that match when each line is actually sung in the audio. Make sure the durations are appropriate for each line of lyrics.
 Please wrap the subtitles between [SUBTITLES_START] and [SUBTITLES_END] tags.`;
 
-async function generateLyrics(audioPath: string, apiKey: string): Promise<string> {
+async function generateLyrics(audioBuffer: Buffer, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig: { temperature: 0 } });
 
-    // Read the audio file as base64
-    const audioBuffer = await readFile(audioPath);
+    // Convert buffer to base64
     const base64Audio = audioBuffer.toString('base64');
     const mimeType = 'audio/mpeg'; // Adjust based on file type
 
@@ -74,15 +71,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
 
-        // Create a unique filename
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const filename = `${uuidv4()}-${file.name}`;
-        const uploadDir = join(process.cwd(), 'uploads');
-        const filepath = join(uploadDir, filename);
-
-        // Save file to disk
-        await writeFile(filepath, buffer);
+        // Convert file to buffer directly
+        const buffer = Buffer.from(await file.arrayBuffer());
 
         try {
             // Use custom API key if provided, otherwise use environment variable
@@ -91,22 +81,17 @@ export async function POST(request: NextRequest) {
                 throw new Error('No API key provided');
             }
 
-            const subtitles = await generateLyrics(filepath, apiKey);
+            const subtitles = await generateLyrics(buffer, apiKey);
 
             // Generate a unique ID for these subtitles and store them
             const fileId = uuidv4();
             subtitlesCache.set(fileId, subtitles);
-
-            // Clean up the uploaded file
-            await unlink(filepath);
 
             return NextResponse.json({
                 subtitles,
                 file_id: fileId,
             });
         } catch (error) {
-            // Clean up the uploaded file in case of error
-            await unlink(filepath);
             throw error;
         }
     } catch (error) {
