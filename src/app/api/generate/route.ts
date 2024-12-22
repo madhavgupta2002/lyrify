@@ -3,6 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { subtitlesCache } from '../utils/cache';
 
+// Constants for file size limits
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB limit
+const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
+
 const prompt = `Generate a Lyrical Subtitle File for this song in the SRT format. 
 The SRT format should follow this structure for each subtitle:
 1. Subtitle number
@@ -61,9 +65,33 @@ async function generateLyrics(audioBuffer: Buffer, apiKey: string): Promise<stri
     }
 }
 
+export const config = {
+    api: {
+        bodyParser: false, // Disable the default body parser
+        responseLimit: '20mb',
+    },
+};
+
 export async function POST(request: NextRequest) {
     try {
-        const formData = await request.formData();
+        // Check content length header
+        const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
+        if (contentLength > MAX_FILE_SIZE) {
+            return NextResponse.json({
+                error: `File size too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+            }, { status: 413 });
+        }
+
+        let formData: FormData;
+        try {
+            formData = await request.formData();
+        } catch (error) {
+            console.error('FormData parsing error:', error);
+            return NextResponse.json({
+                error: 'Failed to parse request body. Please ensure the file size is within limits and try again.'
+            }, { status: 400 });
+        }
+
         const file = formData.get('audio') as File;
         const customApiKey = formData.get('api_key') as string;
 
@@ -71,20 +99,34 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
 
-        // Convert file to buffer directly
-        const buffer = Buffer.from(await file.arrayBuffer());
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({
+                error: `File size too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+            }, { status: 413 });
+        }
+
+        // Stream the file in chunks
+        const chunks: Buffer[] = [];
+        const arrayBuffer = await file.arrayBuffer();
+        let offset = 0;
+
+        while (offset < arrayBuffer.byteLength) {
+            const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
+            chunks.push(Buffer.from(chunk));
+            offset += CHUNK_SIZE;
+        }
+
+        const buffer = Buffer.concat(chunks);
 
         try {
-            // Use custom API key if provided, otherwise use environment variable
-            const apiKey = customApiKey || 'AIzaSyALYOu3CPnz4rGCHL0rtQvE6JB9xL3PRu0';
-            // const apiKey = customApiKey || process.env.API_KEY;
+            const apiKey = customApiKey || "AIzaSyALYOu3CPnz4rGCHL0rtQvE6JB9xL3PRu0";
+            // const apiKey = customApiKey || process.env.GEMINI_API_KEY;
             if (!apiKey) {
                 throw new Error('No API key provided');
             }
 
             const subtitles = await generateLyrics(buffer, apiKey);
-
-            // Generate a unique ID for these subtitles and store them
             const fileId = uuidv4();
             subtitlesCache.set(fileId, subtitles);
 
@@ -92,14 +134,16 @@ export async function POST(request: NextRequest) {
                 subtitles,
                 file_id: fileId,
             });
-        } catch (error) {
-            throw error;
+        } catch (error: any) {
+            console.error('API Error:', error);
+            return NextResponse.json({
+                error: error.message || 'Failed to generate lyrics'
+            }, { status: 500 });
         }
-    } catch (error) {
-        console.error('Error:', error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to process file' },
-            { status: 500 }
-        );
+    } catch (error: any) {
+        console.error('Request Error:', error);
+        return NextResponse.json({
+            error: 'Failed to process request. Please try again.'
+        }, { status: 500 });
     }
 }
