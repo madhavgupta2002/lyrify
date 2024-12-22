@@ -3,15 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { subtitlesCache } from '../utils/cache';
 
-// Configure the route to handle larger files
-export const config = {
-    api: {
-        bodyParser: {
-            sizeLimit: '10mb'
-        }
-    }
-};
-
 const prompt = `Generate a Lyrical Subtitle File for this song in the SRT format. 
 The SRT format should follow this structure for each subtitle:
 1. Subtitle number
