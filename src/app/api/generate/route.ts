@@ -21,15 +21,40 @@ Second line of lyrics
 Please include accurate timestamps that match when each line is actually sung in the audio. Make sure the durations are appropriate for each line of lyrics.
 Please wrap the subtitles between [SUBTITLES_START] and [SUBTITLES_END] tags.`;
 
-async function generateLyrics(audioBuffer: Buffer, apiKey: string): Promise<string> {
+async function uploadToTmpFiles(buffer: Buffer, filename: string): Promise<string> {
+    const formData = new FormData();
+    const blob = new Blob([buffer], { type: 'audio/mpeg' });
+    formData.append('file', blob, filename);
+
+    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+        method: 'POST',
+        body: formData
+    });
+
+    const data = await response.json();
+    if (!data.data.url) {
+        throw new Error('Failed to upload to tmpfiles.org');
+    }
+
+    // Convert view URL to download URL
+    // From: https://tmpfiles.org/18251406/test.mp3
+    // To: https://tmpfiles.org/dl/18251406/test.mp3
+    const viewUrl = data.data.url;
+    const downloadUrl = viewUrl.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+    return downloadUrl;
+}
+
+async function generateLyrics(audioUrl: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-exp-1206", generationConfig: { temperature: 0 } });
 
-    // Convert buffer to base64
-    const base64Audio = audioBuffer.toString('base64');
-    const mimeType = 'audio/mpeg'; // Adjust based on file type
-
     try {
+        // Download the audio file
+        const audioResponse = await fetch(audioUrl);
+        const audioBuffer = await audioResponse.arrayBuffer();
+        const base64Audio = Buffer.from(audioBuffer).toString('base64');
+        const mimeType = 'audio/mpeg';
+
         const result = await model.generateContent([
             prompt,
             {
@@ -71,18 +96,20 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
 
-        // Convert file to buffer directly
+        // Convert file to buffer
         const buffer = Buffer.from(await file.arrayBuffer());
 
         try {
+            // Upload to tmpfiles.org first
+            const downloadUrl = await uploadToTmpFiles(buffer, file.name);
+
             // Use custom API key if provided, otherwise use environment variable
             const apiKey = customApiKey || 'AIzaSyALYOu3CPnz4rGCHL0rtQvE6JB9xL3PRu0';
-            // const apiKey = customApiKey || process.env.API_KEY;
             if (!apiKey) {
                 throw new Error('No API key provided');
             }
 
-            const subtitles = await generateLyrics(buffer, apiKey);
+            const subtitles = await generateLyrics(downloadUrl, apiKey);
 
             // Generate a unique ID for these subtitles and store them
             const fileId = uuidv4();

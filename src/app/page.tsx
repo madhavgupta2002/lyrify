@@ -21,6 +21,11 @@ export default function Home() {
       return;
     }
 
+    if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB limit for tmpfiles.org
+      setError('File size exceeds 2GB limit.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSubtitles(null);
@@ -43,7 +48,11 @@ export default function Home() {
         setSubtitles(data.subtitles);
         setFileId(data.file_id);
       } else {
-        throw new Error(data.error || 'Failed to generate lyrics');
+        let errorMessage = data.error || 'Failed to generate lyrics';
+        if (errorMessage.includes('tmpfiles.org')) {
+          errorMessage = 'Failed to upload audio file. Please try again.';
+        }
+        throw new Error(errorMessage);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
