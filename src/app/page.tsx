@@ -21,18 +21,6 @@ export default function Home() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB limit for tmpfiles.org
-      setError('File size exceeds 2GB limit.');
-      return;
-    }
-
-    console.log('Starting file upload process...');
-    console.log('File details:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
-
     setLoading(true);
     setError(null);
     setSubtitles(null);
@@ -41,50 +29,25 @@ export default function Home() {
     formData.append('audio', file);
     if (apiKey) {
       formData.append('api_key', apiKey);
-      console.log('Using custom API key');
     }
 
     try {
-      console.log('Sending request to /api/generate...');
       const response = await fetch('/api/generate', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      console.log('Content-Type:', contentType);
-
-      if (!contentType?.includes('application/json')) {
-        console.error('Received non-JSON response');
-        const text = await response.text();
-        console.error('Raw response:', text);
-        throw new Error('Server returned non-JSON response');
-      }
-
       const data = await response.json();
-      console.log('Response data:', data);
 
       if (response.ok) {
-        console.log('Request successful, setting subtitles and fileId');
         setSubtitles(data.subtitles);
         setFileId(data.file_id);
       } else {
-        let errorMessage = data.error || 'Failed to generate lyrics';
-        if (errorMessage.includes('tmpfiles.org')) {
-          errorMessage = 'Failed to upload audio file. Please try again.';
-        }
-        console.error('Request failed with error:', errorMessage);
-        throw new Error(errorMessage);
+        throw new Error(data.error || 'Failed to generate lyrics');
       }
     } catch (err) {
-      console.error('Error in handleSubmit:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      console.log('Request completed');
       setLoading(false);
     }
   };
